@@ -30,15 +30,15 @@
 </head>
 <body class="bg-slate-100 text-slate-800 h-full flex flex-col antialiased select-none selection:bg-indigo-100 selection:text-indigo-700">
 
-  <!-- Mobile Top Header -->
+  <!-- Mobile Top Header (iPhone 12 mini optimized: 48px height) -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 pt-safe shrink-0 shadow-2xs">
-    <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="max-w-md mx-auto px-3.5 h-12 flex items-center justify-between">
       <div class="flex items-center space-x-2">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-xs font-bold text-sm">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-xs font-bold text-xs">
           英
         </div>
         <div class="flex flex-col">
-          <span class="font-bold text-slate-900 leading-none text-base">FlashSpeak</span>
+          <span class="font-bold text-slate-900 leading-none text-sm">FlashSpeak</span>
           <span class="text-2xs text-slate-400 mt-0.5">瞬間英作文トレーニング</span>
         </div>
       </div>
@@ -59,16 +59,16 @@
   </header>
 
   <!-- Main View Container -->
-  <main class="flex-1 max-w-md w-full mx-auto px-3.5 pt-3 pb-24 flex flex-col overflow-y-auto">
+  <main class="flex-1 max-w-md w-full mx-auto px-3 pt-2 pb-20 flex flex-col overflow-y-auto">
 
     <!-- VIEW 1: Training View (Mobile Centric) -->
     <div id="view-train" class="flex-1 flex flex-col justify-between">
 
-      <!-- Compact Sub-header Controls -->
-      <div class="bg-white rounded-xl border border-slate-200/80 p-2.5 mb-3 shadow-2xs flex items-center justify-between text-xs">
-        <div class="flex items-center space-x-2">
+      <!-- Compact Sub-header Controls (iPhone 12 mini optimized) -->
+      <div class="bg-white rounded-xl border border-slate-200/80 p-2 mb-2 shadow-2xs flex items-center justify-between text-xs">
+        <div class="flex items-center space-x-1.5">
           <!-- Filter toggle: All vs Bookmarked -->
-          <button id="btn-filter-toggle" class="inline-flex items-center px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-50 font-semibold active:bg-slate-100 transition-colors">
+          <button id="btn-filter-toggle" class="inline-flex items-center px-2 py-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-50 font-bold active:bg-slate-100 transition-colors text-xs">
             <svg id="filter-icon" class="w-3.5 h-3.5 mr-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
@@ -77,7 +77,7 @@
           </button>
 
           <!-- Category filter -->
-          <select id="select-category" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:outline-none max-w-[130px] truncate">
+          <select id="select-category" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:outline-none max-w-[125px] truncate font-medium">
             <option value="all">全カテゴリ</option>
           </select>
         </div>
@@ -94,8 +94,8 @@
         </div>
       </div>
 
-      <!-- Quick Resume Banner -->
-      <div id="banner-resume" class="hidden mb-2.5 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200/80 rounded-xl px-3 py-2 flex items-center justify-between text-xs shadow-2xs">
+      <!-- Quick Resume Banner (iPhone 12 mini optimized) -->
+      <div id="banner-resume" class="hidden mb-2 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-xs shadow-2xs">
         <div class="flex items-center space-x-1.5 min-w-0">
           <span class="flex h-2 w-2 relative shrink-0">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -109,50 +109,50 @@
         </button>
       </div>
 
-      <!-- Progress Indicator -->
-      <div class="mb-3 px-1">
-        <div class="flex justify-between items-center text-2xs font-semibold text-slate-500 mb-1">
+      <!-- Progress Indicator (iPhone 12 mini optimized) -->
+      <div class="mb-2 px-1">
+        <div class="flex justify-between items-center text-2xs font-bold text-slate-500 mb-1">
           <span id="train-progress-text">1 / 15</span>
-          <span id="train-category-badge" class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-medium">一般</span>
+          <span id="train-category-badge" class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold">一般</span>
         </div>
-        <div class="w-full bg-slate-200/80 rounded-full h-1 overflow-hidden">
-          <div id="train-progress-bar" class="bg-indigo-600 h-1 rounded-full transition-all duration-300" style="width: 20%"></div>
+        <div class="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+          <div id="train-progress-bar" class="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" style="width: 20%"></div>
         </div>
       </div>
 
-      <!-- INTERACTIVE FLASHCARD -->
-      <div id="card-touch-target" class="card-transition flex-1 bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between relative cursor-pointer active:border-indigo-300">
+      <!-- INTERACTIVE FLASHCARD (iPhone 12 mini optimized padding & typography) -->
+      <div id="card-touch-target" class="card-transition flex-1 bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 flex flex-col justify-between relative cursor-pointer active:border-indigo-300">
         
         <!-- Card Top Bar: Audio, Study Status & Bookmark Button -->
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100/80 shrink-0">
-          <button id="btn-play-ja" class="inline-flex items-center px-3 py-2 rounded-xl bg-slate-100 active:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
-            <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100/80 shrink-0">
+          <button id="btn-play-ja" class="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+            <svg class="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
             </svg>
-            日本語音声
+            日本語
           </button>
 
           <!-- Study Status Badge on Card (未学習 or ✓ 10/17 済 (1回目)) -->
-          <span id="card-study-badge" class="px-2.5 py-1 rounded-full text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 transition-colors">
+          <span id="card-study-badge" class="px-2 py-0.5 rounded-full text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 transition-colors">
             未学習
           </span>
 
-          <!-- Large, Easy-to-Press Bookmark Button -->
-          <button id="btn-bookmark-card" class="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 active:scale-95 text-xs font-bold transition-all shadow-2xs" title="復習ブックマーク">
-            <svg id="icon-bookmark-card" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <!-- Easy-to-Press Bookmark Button -->
+          <button id="btn-bookmark-card" class="inline-flex items-center px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 active:scale-95 text-xs font-bold transition-all shadow-2xs" title="復習ブックマーク">
+            <svg id="icon-bookmark-card" class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
             <span id="label-bookmark-card">復習ピン</span>
           </button>
         </div>
 
-        <!-- Japanese Prompt (Centered, large) -->
-        <div class="my-auto py-6 text-center flex flex-col items-center justify-center">
-          <span class="text-2xs font-bold uppercase tracking-wider text-slate-400 mb-2">Japanese</span>
-          <p id="card-ja" class="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed px-1">
+        <!-- Japanese Prompt (iPhone 12 mini: Crisp, perfectly sized typography) -->
+        <div class="my-auto py-3 text-center flex flex-col items-center justify-center">
+          <span class="text-2xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Japanese</span>
+          <p id="card-ja" class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed px-1">
             この電車は東京駅に行きますか？
           </p>
-          <p id="tap-hint" class="text-2xs text-slate-400 mt-4 flex items-center">
+          <p id="tap-hint" class="text-2xs text-slate-400 mt-2.5 flex items-center">
             <svg class="w-3.5 h-3.5 mr-1 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
             </svg>
@@ -160,21 +160,21 @@
           </p>
         </div>
 
-        <!-- English Answer Section -->
-        <div id="card-answer-box" class="pt-4 border-t border-slate-100/90 shrink-0 hidden">
-          <div class="flex items-center justify-between mb-1.5">
+        <!-- English Answer Section (iPhone 12 mini: Clean compact spacing) -->
+        <div id="card-answer-box" class="pt-3 border-t border-slate-100/90 shrink-0 hidden">
+          <div class="flex items-center justify-between mb-1">
             <span class="text-2xs font-bold uppercase tracking-wider text-indigo-600">English</span>
-            <button id="btn-play-en" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-50 active:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors">
-              <svg class="w-4 h-4 mr-1.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button id="btn-play-en" class="inline-flex items-center px-2.5 py-1 rounded-lg bg-indigo-50 active:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors">
+              <svg class="w-3.5 h-3.5 mr-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
               </svg>
-              英語音声
+              英語
             </button>
           </div>
-          <p id="card-en" class="text-base sm:text-lg font-bold text-indigo-950 leading-snug py-1">
+          <p id="card-en" class="text-sm sm:text-base font-bold text-indigo-950 leading-snug py-0.5">
             English sentence
           </p>
-          <p id="card-notes" class="text-xs text-slate-500 italic mt-0.5">
+          <p id="card-notes" class="text-2xs text-slate-500 italic mt-0.5">
             解説
           </p>
         </div>
@@ -185,18 +185,18 @@
 
       </div>
 
-      <!-- Bottom Primary Controls (Thumb Zone: 前の文 / 次の文 の2つに集約) -->
-      <div class="mt-4 flex items-center justify-between gap-3">
-        <button id="btn-prev" class="flex-1 h-13 px-4 rounded-xl border border-slate-200 bg-white active:bg-slate-100 text-slate-700 font-bold text-sm shadow-2xs flex items-center justify-center">
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Bottom Primary Controls (iPhone 12 mini thumb zone: 44px target) -->
+      <div class="mt-2.5 flex items-center justify-between gap-2.5">
+        <button id="btn-prev" class="flex-1 h-11 px-3.5 rounded-xl border border-slate-200 bg-white active:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs flex items-center justify-center">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
           </svg>
           前の文
         </button>
 
-        <button id="btn-next" class="flex-1 h-13 px-4 rounded-xl bg-indigo-600 active:bg-indigo-700 text-white font-bold text-sm shadow-sm flex items-center justify-center">
+        <button id="btn-next" class="flex-1 h-11 px-3.5 rounded-xl bg-indigo-600 active:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center">
           次の文
-          <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
           </svg>
         </button>
@@ -364,9 +364,9 @@
 
   </main>
 
-  <!-- Mobile Bottom Navigation Bar -->
+  <!-- Mobile Bottom Navigation Bar (iPhone 12 mini optimized) -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 pb-safe shadow-lg">
-    <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-around text-xs">
+    <div class="max-w-md mx-auto px-3 h-12 flex items-center justify-around text-xs">
       <button id="tab-train" class="flex flex-col items-center justify-center flex-1 py-1 text-indigo-600 font-bold transition-colors">
         <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -817,13 +817,13 @@
 
       // Bookmark state (大きく押しやすいボタンの見た目切替)
       if (card.bookmarked) {
-        bookmarkCardBtn.className = 'inline-flex items-center px-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50 active:scale-95 text-xs font-bold text-amber-800 transition-all shadow-2xs';
+        bookmarkCardBtn.className = 'inline-flex items-center px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 active:scale-95 text-xs font-bold text-amber-800 transition-all shadow-2xs';
         iconBookmarkCard.setAttribute('fill', 'currentColor');
         iconBookmarkCard.classList.add('text-amber-500');
         iconBookmarkCard.classList.remove('text-slate-400');
         labelBookmarkCard.textContent = '復習中 ★';
       } else {
-        bookmarkCardBtn.className = 'inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 text-xs font-bold text-slate-600 transition-all shadow-2xs';
+        bookmarkCardBtn.className = 'inline-flex items-center px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 text-xs font-bold text-slate-600 transition-all shadow-2xs';
         iconBookmarkCard.setAttribute('fill', 'none');
         iconBookmarkCard.classList.remove('text-amber-500');
         iconBookmarkCard.classList.add('text-slate-400');
