@@ -317,37 +317,20 @@
               </button>
             </div>
             <select id="select-en-voice" class="w-full text-xs px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
-              <option value="system_default">自動最適化（Ava Premium等の高品質音声を最優先）★推奨</option>
+              <option value="ava_preferred">Ava（拡張 / プレミアム）★最優先（推奨）</option>
+              <option value="system_default">端末の標準音声（iPhone設定準拠）</option>
             </select>
-            <p class="text-2xs text-slate-400 mt-1">※ iPhoneでAva(プレミアム)やSamantha(拡張)をダウンロードすると自動認識されます</p>
-          </div>
-
-          <!-- iPhone Voice Setup Guide (Clear explanation of Siri limitation) -->
-          <div class="p-3 bg-amber-50/80 border border-amber-200/90 rounded-xl text-2xs text-slate-700 space-y-1.5 shadow-2xs">
-            <div class="font-bold text-amber-900 flex items-center">
-              <svg class="w-3.5 h-3.5 mr-1 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <span>【重要】iPhoneで自然な肉声にするための設定</span>
-            </div>
-            <p class="text-slate-700 leading-relaxed text-2xs">
-              Appleのセキュリティ制限により、<strong class="text-red-600">「Siri」という名称の音声はSafari（Webアプリ）からの再生がAppleによって禁止</strong>されており、選んでも強制的に旧型の機械声に戻されてしまいます。<br>
-              代わりに、AppleがWeb用に公式開放している<strong class="text-indigo-700 font-bold">「Ava（プレミアム）」</strong>または<strong class="text-indigo-700 font-bold">「Samantha（拡張）」</strong>を使用すると、Siri同等以上の超自然なネイティブ肉声になります：
+            <p class="text-2xs text-emerald-600 font-medium mt-1 flex items-center">
+              <svg class="w-3.5 h-3.5 mr-1 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              ダウンロード済みの「Ava（拡張）」を自動検出して最優先で使用します
             </p>
-            <ol class="list-decimal list-inside space-y-1 text-slate-800 font-medium pl-0.5 text-2xs">
-              <li>iPhoneの<strong class="text-slate-900">「設定」＞「アクセシビリティ」＞「読み上げコンテンツ」＞「声」＞「英語」</strong>を開く</li>
-              <li>「Siri」ではなく、一覧の<strong class="text-indigo-700">「Ava」</strong>（または「Samantha」）をタップ</li>
-              <li><strong class="text-indigo-700">「プレミアム」</strong>または「拡張」の雲マークをタップしてダウンロード</li>
-              <li>ダウンロード完了後、チェックを付けてから<strong class="text-red-700">Safariを一度上にスワイプして完全終了（タスクキル）して再起動</strong></li>
-            </ol>
           </div>
 
           <div>
             <div class="flex justify-between font-medium text-slate-700 mb-1">
-              <span>英語の再生速度: <span id="val-en-speed" class="font-bold text-indigo-600">0.9x</span></span>
-              <span class="text-2xs text-slate-400">※0.9x前後がネイティブの自然な抑揚です</span>
+              <span>英語の再生速度: <span id="val-en-speed" class="font-bold text-indigo-600">1.0x</span></span>
             </div>
-            <input type="range" id="range-en-speed" min="0.6" max="1.4" step="0.05" value="0.9" class="w-full accent-indigo-600">
+            <input type="range" id="range-en-speed" min="0.6" max="1.4" step="0.05" value="1.0" class="w-full accent-indigo-600">
           </div>
 
           <div>
@@ -539,9 +522,9 @@
     let autoPlayEnabled = false;
     let autoPlayJa = false;
     let autoPlayEn = true;
-    let speechRateEn = 0.9;
+    let speechRateEn = 1.0;
     let speechRateJa = 1.0;
-    let selectedEnVoiceUri = 'system_default';
+    let selectedEnVoiceUri = 'ava_preferred';
     let spreadsheetUrl = '';
     let activeTab = 'train';
 
@@ -612,12 +595,12 @@
           autoPlayEnabled = !!s.autoPlayEnabled;
           autoPlayJa = s.autoPlayJa !== undefined ? !!s.autoPlayJa : false;
           autoPlayEn = s.autoPlayEn !== undefined ? !!s.autoPlayEn : true;
-          speechRateEn = s.speechRateEn !== undefined ? s.speechRateEn : 0.9;
+          speechRateEn = s.speechRateEn !== undefined ? s.speechRateEn : 1.0;
           speechRateJa = s.speechRateJa || 1.0;
-          selectedEnVoiceUri = s.selectedEnVoiceUri || 'system_default';
+          selectedEnVoiceUri = s.selectedEnVoiceUri || 'ava_preferred';
           spreadsheetUrl = s.spreadsheetUrl || '';
         } else {
-          selectedEnVoiceUri = 'system_default';
+          selectedEnVoiceUri = 'ava_preferred';
         }
       } catch (e) {
         console.warn('LocalStorage error:', e);
@@ -655,27 +638,33 @@
       const voices = window.speechSynthesis.getVoices();
       if (!voices || voices.length === 0) return null;
 
-      if (preferredVoiceUri && preferredVoiceUri !== 'system_default') {
-        const customMatch = voices.find(v => (v.voiceURI === preferredVoiceUri || v.name === preferredVoiceUri));
-        if (customMatch) return customMatch;
-      }
-
       const langPrefix = lang.split('-')[0].toLowerCase();
       const matchingVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
       if (matchingVoices.length === 0) return null;
 
-      // 高品質ボイスキーワード優先（Apple製ではPremium/Enhanced/Ava/Alexが最高品質）
-      const highQualityKeywords = ['premium', 'enhanced', 'ava', 'alex', 'natural', 'neural', 'google', 'allison', 'samantha', 'daniel'];
-      
-      for (const kw of highQualityKeywords) {
-        const found = matchingVoices.find(v => v.name.toLowerCase().includes(kw) && v.lang.toLowerCase().replace('_', '-').includes(lang.toLowerCase()));
-        if (found) return found;
+      // 1. 個別指定（URIまたは名前）がava_preferredやsystem_default以外で指定されている場合
+      if (preferredVoiceUri && !['system_default', 'ava_preferred', 'ava', ''].includes(preferredVoiceUri)) {
+        const customMatch = matchingVoices.find(v => (v.voiceURI === preferredVoiceUri || v.name === preferredVoiceUri));
+        if (customMatch) return customMatch;
       }
 
-      for (const kw of highQualityKeywords) {
-        const found = matchingVoices.find(v => v.name.toLowerCase().includes(kw));
-        if (found) return found;
-      }
+      // 2. 最優先: Ava（拡張 / Enhanced / Premium / プレミアム）
+      const avaEnhanced = matchingVoices.find(v => {
+        const n = v.name.toLowerCase();
+        return n.includes('ava') && (n.includes('enhanced') || n.includes('premium') || n.includes('拡張') || n.includes('プレミアム'));
+      });
+      if (avaEnhanced) return avaEnhanced;
+
+      // 3. Ava（通常・任意）
+      const anyAva = matchingVoices.find(v => v.name.toLowerCase().includes('ava'));
+      if (anyAva) return anyAva;
+
+      // 4. その他の高音質（Samantha Enhanced, Alex, Neural, Natural）
+      const otherEnhanced = matchingVoices.find(v => {
+        const n = v.name.toLowerCase();
+        return n.includes('enhanced') || n.includes('premium') || n.includes('alex') || n.includes('拡張') || n.includes('natural') || n.includes('neural');
+      });
+      if (otherEnhanced) return otherEnhanced;
 
       const exactLang = matchingVoices.find(v => v.lang.toLowerCase().replace('_', '-') === lang.toLowerCase());
       return exactLang || matchingVoices[0];
@@ -693,11 +682,11 @@
         utterance.rate = rate;
 
         if (lang.startsWith('en')) {
-          if (selectedEnVoiceUri === 'system_default') {
-            // 端末標準。ただし高品質ボイス（Ava Premium/Samantha Enhanced等）があれば明示適用してiOSのSiri制限・機械音へのフォールバックを回避
-            const highQualityVoice = getBestVoice(lang, '');
-            if (highQualityVoice && /premium|enhanced|ava|alex/i.test(highQualityVoice.name)) {
-              utterance.voice = highQualityVoice;
+          if (selectedEnVoiceUri === 'ava_preferred' || selectedEnVoiceUri === 'system_default') {
+            // Ava（拡張/プレミアム）を最優先で探索して明示割り当て
+            const bestEnVoice = getBestVoice(lang, 'ava');
+            if (bestEnVoice) {
+              utterance.voice = bestEnVoice;
             } else {
               utterance.voice = null;
             }
@@ -737,11 +726,11 @@
       const select = document.getElementById('select-en-voice');
       if (!select) return;
 
-      let html = '<option value="system_default">端末の標準音声★おすすめ</option>';
-      html += '<option value="">自動（ブラウザの高品質音声を優先）</option>';
+      let html = '<option value="ava_preferred">Ava（拡張 / プレミアム）★最優先（推奨）</option>';
+      html += '<option value="system_default">端末の標準音声（iPhone設定準拠）</option>';
 
       if (voices && voices.length > 0) {
-        // 主要英語音声（米語・英語・豪語）に絞り込み、高音質（Premium/Enhanced）を優先表示
+        // 主要英語音声（米語・英語・豪語）に絞り込み、Ava（拡張）を最上位に配置
         const enVoices = voices.filter(v => {
           const l = v.lang.toLowerCase().replace('_', '-');
           if (!l.startsWith('en')) return false;
@@ -749,12 +738,17 @@
           return l.includes('us') || l.includes('gb') || l.includes('uk') || l.includes('au') || l === 'en';
         });
 
-        // 高音質ボイス（Premium, Enhanced, Ava, Alex）を上位にソート
-        enVoices.sort((a, b) => {
-          const scoreA = /premium/i.test(a.name) ? 3 : /enhanced|ava|alex/i.test(a.name) ? 2 : 1;
-          const scoreB = /premium/i.test(b.name) ? 3 : /enhanced|ava|alex/i.test(b.name) ? 2 : 1;
-          return scoreB - scoreA;
-        });
+        const getVoiceScore = (v) => {
+          const n = v.name.toLowerCase();
+          if (n.includes('ava') && (n.includes('enhanced') || n.includes('premium') || n.includes('拡張') || n.includes('プレミアム'))) return 10;
+          if (n.includes('ava')) return 8;
+          if (n.includes('premium')) return 6;
+          if (n.includes('enhanced') || n.includes('拡張') || n.includes('alex')) return 5;
+          if (n.includes('samantha') || n.includes('allison')) return 3;
+          return 1;
+        };
+
+        enVoices.sort((a, b) => getVoiceScore(b) - getVoiceScore(a));
 
         enVoices.forEach(v => {
           const isSelected = (v.voiceURI === selectedEnVoiceUri || v.name === selectedEnVoiceUri) ? 'selected' : '';
@@ -763,14 +757,18 @@
           if (l.includes('gb') || l.includes('uk')) accentLabel = 'イギリス英語';
           else if (l.includes('au')) accentLabel = '豪州英語';
 
-          const isHighDef = /premium|enhanced|ava|alex/i.test(v.name);
-          const label = `${v.name} [${accentLabel}]${isHighDef ? ' ★極上の肉声' : ''}`;
+          const n = v.name.toLowerCase();
+          let tag = '';
+          if (n.includes('ava')) tag = ' ★Ava優先';
+          else if (n.includes('enhanced') || n.includes('premium') || n.includes('alex')) tag = ' ★高音質';
+
+          const label = `${v.name} [${accentLabel}]${tag}`;
           html += `<option value="${v.voiceURI || v.name}" ${isSelected}>${label}</option>`;
         });
       }
 
       select.innerHTML = html;
-      select.value = selectedEnVoiceUri || 'system_default';
+      select.value = selectedEnVoiceUri || 'ava_preferred';
     }
 
     // --- 5. Training Deck & Filter Logic ---
