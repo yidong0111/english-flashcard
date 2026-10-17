@@ -123,23 +123,23 @@
       <!-- INTERACTIVE FLASHCARD (iPhone 12 mini optimized padding & typography) -->
       <div id="card-touch-target" class="card-transition flex-1 bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 flex flex-col justify-between relative cursor-pointer active:border-indigo-300">
         
-        <!-- Card Top Bar: Audio, Study Status & Bookmark Button -->
-        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100/80 shrink-0">
-          <button id="btn-play-ja" class="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
-            <svg class="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Card Top Bar: Audio, Study Status & Bookmark Button (Strict single-row, compact 2xs sizing) -->
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100/80 shrink-0 gap-1.5 flex-nowrap w-full">
+          <button id="btn-play-ja" class="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 active:bg-slate-200 text-slate-600 text-2xs font-bold shrink-0 whitespace-nowrap transition-colors" title="日本語音声を再生">
+            <svg class="w-3 h-3 mr-1 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
             </svg>
             日本語
           </button>
 
-          <!-- Study Status Badge on Card (未学習 or ✓ 10/17 済 (1回目)) -->
-          <span id="card-study-badge" class="px-2 py-0.5 rounded-full text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 transition-colors">
+          <!-- Study Status Badge on Card (Strict single-line, compact 2xs) -->
+          <span id="card-study-badge" class="px-2 py-0.5 rounded-full text-2xs font-semibold bg-slate-100 text-slate-400 border border-slate-200/80 shrink-0 whitespace-nowrap transition-colors">
             未学習
           </span>
 
-          <!-- Easy-to-Press Bookmark Button -->
-          <button id="btn-bookmark-card" class="inline-flex items-center px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 active:scale-95 text-xs font-bold transition-all shadow-2xs" title="復習ブックマーク">
-            <svg id="icon-bookmark-card" class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <!-- Bookmark Button (Strict single-line, compact 2xs) -->
+          <button id="btn-bookmark-card" class="inline-flex items-center px-2 py-1 rounded-md border border-slate-200 bg-slate-50 active:scale-95 text-2xs font-bold text-slate-600 shrink-0 whitespace-nowrap transition-all shadow-2xs" title="復習ブックマーク">
+            <svg id="icon-bookmark-card" class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
             <span id="label-bookmark-card">復習ピン</span>
@@ -817,13 +817,13 @@
 
       // Bookmark state (大きく押しやすいボタンの見た目切替)
       if (card.bookmarked) {
-        bookmarkCardBtn.className = 'inline-flex items-center px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 active:scale-95 text-xs font-bold text-amber-800 transition-all shadow-2xs';
+        bookmarkCardBtn.className = 'inline-flex items-center px-2 py-1 rounded-md border border-amber-300 bg-amber-50 active:scale-95 text-2xs font-bold text-amber-800 shrink-0 whitespace-nowrap transition-all shadow-2xs';
         iconBookmarkCard.setAttribute('fill', 'currentColor');
         iconBookmarkCard.classList.add('text-amber-500');
         iconBookmarkCard.classList.remove('text-slate-400');
         labelBookmarkCard.textContent = '復習中 ★';
       } else {
-        bookmarkCardBtn.className = 'inline-flex items-center px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 text-xs font-bold text-slate-600 transition-all shadow-2xs';
+        bookmarkCardBtn.className = 'inline-flex items-center px-2 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 text-2xs font-bold text-slate-600 shrink-0 whitespace-nowrap transition-all shadow-2xs';
         iconBookmarkCard.setAttribute('fill', 'none');
         iconBookmarkCard.classList.remove('text-amber-500');
         iconBookmarkCard.classList.add('text-slate-400');
@@ -842,15 +842,14 @@
         if (tapHint) tapHint.innerHTML = '<svg class="w-3.5 h-3.5 mr-1 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>画面タップで答えを表示';
       }
 
-      // Update Card Study Badge (未学習 or ✓ 10/17 済 (1回目))
+      // Update Card Study Badge (未学習 or ✓ 10/17 済) - Compact & Single Line
       const studyBadge = document.getElementById('card-study-badge');
       if (studyBadge) {
         if (card.lastStudiedAt) {
-          const countStr = card.studyCount ? ` (${card.studyCount}回目)` : '';
-          studyBadge.className = 'px-2.5 py-1 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 transition-colors flex items-center shadow-2xs';
-          studyBadge.innerHTML = `<svg class="w-3 h-3 mr-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>${card.lastStudiedAt} 済${countStr}`;
+          studyBadge.className = 'px-2 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 whitespace-nowrap flex items-center transition-colors shadow-2xs';
+          studyBadge.innerHTML = `<svg class="w-2.5 h-2.5 mr-1 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>${card.lastStudiedAt} 済`;
         } else {
-          studyBadge.className = 'px-2.5 py-1 rounded-full text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 transition-colors';
+          studyBadge.className = 'px-2 py-0.5 rounded-full text-2xs font-medium bg-slate-100 text-slate-400 border border-slate-200/80 shrink-0 whitespace-nowrap transition-colors';
           studyBadge.textContent = '未学習';
         }
       }
