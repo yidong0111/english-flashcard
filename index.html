@@ -8,6 +8,22 @@
   <meta name="theme-color" content="#4f46e5">
   <title>FlashSpeak - 瞬間英作文アプリ</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontSize: {
+            '3xs': ['0.625rem', { lineHeight: '0.875rem' }], // 10px
+            '2xs': ['0.6875rem', { lineHeight: '1rem' }],    // 11px
+            'xs': ['0.75rem', { lineHeight: '1.125rem' }],   // 12px
+            'sm': ['0.8125rem', { lineHeight: '1.25rem' }],  // 13px
+            'base': ['0.9375rem', { lineHeight: '1.375rem' }],// 15px
+            'lg': ['1.0625rem', { lineHeight: '1.5rem' }],   // 17px
+          }
+        }
+      }
+    };
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -25,6 +41,23 @@
     }
     .card-transition {
       transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+    }
+    
+    /* Dedicated responsive typography optimized for iPhone 13 mini (375px viewport) */
+    .text-3xs { font-size: 10px !important; line-height: 14px !important; }
+    .text-2xs { font-size: 11px !important; line-height: 15px !important; }
+    
+    .card-prompt-ja {
+      font-size: clamp(1.025rem, 4.5vw, 1.25rem) !important;
+      line-height: 1.55 !important;
+    }
+    .card-answer-en {
+      font-size: clamp(0.925rem, 4.1vw, 1.125rem) !important;
+      line-height: 1.45 !important;
+    }
+    .card-notes-text {
+      font-size: 11px !important;
+      line-height: 15px !important;
     }
   </style>
 </head>
@@ -146,7 +179,7 @@
         <!-- Japanese Prompt (iPhone 12 mini: Crisp, perfectly sized typography) -->
         <div class="my-auto py-3 text-center flex flex-col items-center justify-center">
           <span class="text-2xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Japanese</span>
-          <p id="card-ja" class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed px-1">
+          <p id="card-ja" class="card-prompt-ja font-bold text-slate-900 px-1">
             この電車は東京駅に行きますか？
           </p>
           <p id="tap-hint" class="text-2xs text-slate-400 mt-2.5 flex items-center">
@@ -168,10 +201,10 @@
               英語
             </button>
           </div>
-          <p id="card-en" class="text-sm sm:text-base font-bold text-indigo-950 leading-snug py-0.5">
+          <p id="card-en" class="card-answer-en font-bold text-indigo-950 py-0.5">
             English sentence
           </p>
-          <p id="card-notes" class="text-2xs text-slate-500 italic mt-0.5">
+          <p id="card-notes" class="card-notes-text text-slate-500 italic mt-0.5">
             解説
           </p>
         </div>
