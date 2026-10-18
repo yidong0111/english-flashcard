@@ -350,12 +350,12 @@
               </button>
             </div>
             <select id="select-en-voice" class="w-full text-xs px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
-              <option value="ava_preferred">Ava（拡張 / プレミアム）★最優先（推奨）</option>
-              <option value="system_default">端末の標準音声（iPhone設定準拠）</option>
+              <option value="google_tts">Google音声（Web高音質・明瞭）★おすすめ</option>
+              <option value="device_default">端末の標準音声（Samantha等・オフライン可）</option>
             </select>
-            <p class="text-2xs text-emerald-600 font-medium mt-1 flex items-center">
-              <svg class="w-3.5 h-3.5 mr-1 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-              ダウンロード済みの「Ava（拡張）」を自動検出して最優先で使用します
+            <p class="text-2xs text-indigo-600 font-medium mt-1 flex items-center">
+              <svg class="w-3.5 h-3.5 mr-1 shrink-0 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              明瞭で自然なGoogle音声を標準使用。オフライン時は端末音声へ自動フォールバックします
             </p>
           </div>
 
@@ -557,7 +557,7 @@
     let autoPlayEn = true;
     let speechRateEn = 1.0;
     let speechRateJa = 1.0;
-    let selectedEnVoiceUri = 'ava_preferred';
+    let selectedEnVoiceUri = 'google_tts';
     let spreadsheetUrl = '';
     let activeTab = 'train';
 
@@ -630,10 +630,10 @@
           autoPlayEn = s.autoPlayEn !== undefined ? !!s.autoPlayEn : true;
           speechRateEn = s.speechRateEn !== undefined ? s.speechRateEn : 1.0;
           speechRateJa = s.speechRateJa || 1.0;
-          selectedEnVoiceUri = s.selectedEnVoiceUri || 'ava_preferred';
+          selectedEnVoiceUri = s.selectedEnVoiceUri || 'google_tts';
           spreadsheetUrl = s.spreadsheetUrl || '';
         } else {
-          selectedEnVoiceUri = 'ava_preferred';
+          selectedEnVoiceUri = 'google_tts';
         }
       } catch (e) {
         console.warn('LocalStorage error:', e);
@@ -666,48 +666,53 @@
     }
 
     // --- 4. Web Speech API (音声モデルのスマート選択) ---
+    let currentAudioObj = null;
+
+    // Novelty / joke voices in WebKit to strictly filter out
+    const JOKE_VOICE_NAMES = [
+      'albert', 'bad news', 'bahh', 'bells', 'boing', 'bubbles', 'cellos', 
+      'deranged', 'fred', 'good news', 'hysterical', 'junior', 'kathy', 
+      'pipe organ', 'organ', 'princess', 'ralph', 'trinoids', 'whisper', 
+      'zarvox', 'jester', 'superstar', 'wobble', 'grandpa', 'grandma'
+    ];
+
+    function isCleanVoice(name) {
+      if (!name) return false;
+      const lower = name.toLowerCase();
+      return !JOKE_VOICE_NAMES.some(j => lower.includes(j));
+    }
+
     function getBestVoice(lang, preferredVoiceUri = '') {
       if (!('speechSynthesis' in window)) return null;
       const voices = window.speechSynthesis.getVoices();
       if (!voices || voices.length === 0) return null;
 
       const langPrefix = lang.split('-')[0].toLowerCase();
-      const matchingVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
-      if (matchingVoices.length === 0) return null;
+      // おふざけ音声を除外したクリーンな音声一覧
+      const matchingVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix) && isCleanVoice(v.name));
+      if (matchingVoices.length === 0) {
+        // 万が一クリーンな音声が見当たらない場合は全体から検索
+        const rawVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
+        return rawVoices[0] || null;
+      }
 
-      // 1. 個別指定（URIまたは名前）がava_preferredやsystem_default以外で指定されている場合
-      if (preferredVoiceUri && !['system_default', 'ava_preferred', 'ava', ''].includes(preferredVoiceUri)) {
+      if (preferredVoiceUri && !['system_default', 'device_default', 'google_tts', ''].includes(preferredVoiceUri)) {
         const customMatch = matchingVoices.find(v => (v.voiceURI === preferredVoiceUri || v.name === preferredVoiceUri));
         if (customMatch) return customMatch;
       }
 
-      // 2. 最優先: Ava（拡張 / Enhanced / Premium / プレミアム）
-      const avaEnhanced = matchingVoices.find(v => {
+      // Samantha, Daniel, Karen などの標準的な自然な音声を優先
+      const standardVoice = matchingVoices.find(v => {
         const n = v.name.toLowerCase();
-        return n.includes('ava') && (n.includes('enhanced') || n.includes('premium') || n.includes('拡張') || n.includes('プレミアム'));
+        return n.includes('samantha') || n.includes('daniel') || n.includes('karen') || n.includes('allison');
       });
-      if (avaEnhanced) return avaEnhanced;
+      if (standardVoice) return standardVoice;
 
-      // 3. Ava（通常・任意）
-      const anyAva = matchingVoices.find(v => v.name.toLowerCase().includes('ava'));
-      if (anyAva) return anyAva;
-
-      // 4. その他の高音質（Samantha Enhanced, Alex, Neural, Natural）
-      const otherEnhanced = matchingVoices.find(v => {
-        const n = v.name.toLowerCase();
-        return n.includes('enhanced') || n.includes('premium') || n.includes('alex') || n.includes('拡張') || n.includes('natural') || n.includes('neural');
-      });
-      if (otherEnhanced) return otherEnhanced;
-
-      const exactLang = matchingVoices.find(v => v.lang.toLowerCase().replace('_', '-') === lang.toLowerCase());
-      return exactLang || matchingVoices[0];
+      return matchingVoices[0];
     }
 
-    function speakText(text, lang, rate = 1.0) {
-      if (!('speechSynthesis' in window)) {
-        showToast('お使いのブラウザは音声合成に対応していません');
-        return;
-      }
+    function speakWithWebSpeech(text, lang, rate = 1.0) {
+      if (!('speechSynthesis' in window)) return;
       try {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
@@ -715,31 +720,65 @@
         utterance.rate = rate;
 
         if (lang.startsWith('en')) {
-          if (selectedEnVoiceUri === 'ava_preferred' || selectedEnVoiceUri === 'system_default') {
-            // Ava（拡張/プレミアム）を最優先で探索して明示割り当て
-            const bestEnVoice = getBestVoice(lang, 'ava');
-            if (bestEnVoice) {
-              utterance.voice = bestEnVoice;
-            } else {
-              utterance.voice = null;
-            }
+          if (selectedEnVoiceUri === 'device_default' || selectedEnVoiceUri === 'google_tts') {
+            const bestVoice = getBestVoice(lang, '');
+            if (bestVoice) utterance.voice = bestVoice;
+            else utterance.voice = null;
           } else {
             const bestVoice = getBestVoice(lang, selectedEnVoiceUri);
-            if (bestVoice) {
-              utterance.voice = bestVoice;
-            }
+            if (bestVoice) utterance.voice = bestVoice;
           }
         } else {
           const bestVoice = getBestVoice(lang, '');
-          if (bestVoice) {
-            utterance.voice = bestVoice;
-          }
+          if (bestVoice) utterance.voice = bestVoice;
         }
 
         window.speechSynthesis.speak(utterance);
       } catch (e) {
-        console.error('Speech error:', e);
+        console.warn('WebSpeech error:', e);
       }
+    }
+
+    function speakText(text, lang, rate = 1.0) {
+      // 停止処理
+      if (currentAudioObj) {
+        try { currentAudioObj.pause(); currentAudioObj.src = ''; } catch(e){}
+        currentAudioObj = null;
+      }
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch(e){}
+      }
+
+      // 英語かつGoogleオンライン音声が選ばれている場合
+      if (lang.startsWith('en') && (selectedEnVoiceUri === 'google_tts' || !selectedEnVoiceUri)) {
+        try {
+          const cleanText = encodeURIComponent(text.trim());
+          const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${cleanText}`;
+          const audio = new Audio(url);
+          audio.playbackRate = rate;
+          currentAudioObj = audio;
+
+          // エラーまたはオフライン時は即座に端末内WebSpeechへフォールバック
+          audio.onerror = () => {
+            speakWithWebSpeech(text, lang, rate);
+          };
+
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              speakWithWebSpeech(text, lang, rate);
+            });
+          }
+          return;
+        } catch (err) {
+          console.warn('Google TTS play failed, fallback to local:', err);
+          speakWithWebSpeech(text, lang, rate);
+          return;
+        }
+      }
+
+      // それ以外（日本語またはユーザーが端末内音声を明示選択した場合）
+      speakWithWebSpeech(text, lang, rate);
     }
 
     function playCurrentJa() {
@@ -754,54 +793,39 @@
 
     // プルダウンのクリーニング（重複・難解な内部IDを除外して主要音声のみ整理）
     function populateVoiceSelect() {
-      if (!('speechSynthesis' in window)) return;
-      const voices = window.speechSynthesis.getVoices();
       const select = document.getElementById('select-en-voice');
       if (!select) return;
 
-      let html = '<option value="ava_preferred">Ava（拡張 / プレミアム）★最優先（推奨）</option>';
-      html += '<option value="system_default">端末の標準音声（iPhone設定準拠）</option>';
+      let html = '<option value="google_tts">Google音声（Web高音質・明瞭）★おすすめ</option>';
+      html += '<option value="device_default">端末の標準音声（Samantha等・オフライン可）</option>';
 
-      if (voices && voices.length > 0) {
-        // 主要英語音声（米語・英語・豪語）に絞り込み、Ava（拡張）を最上位に配置
-        const enVoices = voices.filter(v => {
-          const l = v.lang.toLowerCase().replace('_', '-');
-          if (!l.startsWith('en')) return false;
-          if (v.name.startsWith('com.apple') || v.name.includes('#')) return false;
-          return l.includes('us') || l.includes('gb') || l.includes('uk') || l.includes('au') || l === 'en';
-        });
+      if ('speechSynthesis' in window) {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices && voices.length > 0) {
+          // 主要英語音声（米語・英語・豪語）に絞り込み、おふざけ・変な音声を完全排除
+          const enVoices = voices.filter(v => {
+            const l = v.lang.toLowerCase().replace('_', '-');
+            if (!l.startsWith('en')) return false;
+            if (v.name.startsWith('com.apple') || v.name.includes('#')) return false;
+            if (!isCleanVoice(v.name)) return false; // おふざけ音声を除外
+            return l.includes('us') || l.includes('gb') || l.includes('uk') || l.includes('au') || l === 'en';
+          });
 
-        const getVoiceScore = (v) => {
-          const n = v.name.toLowerCase();
-          if (n.includes('ava') && (n.includes('enhanced') || n.includes('premium') || n.includes('拡張') || n.includes('プレミアム'))) return 10;
-          if (n.includes('ava')) return 8;
-          if (n.includes('premium')) return 6;
-          if (n.includes('enhanced') || n.includes('拡張') || n.includes('alex')) return 5;
-          if (n.includes('samantha') || n.includes('allison')) return 3;
-          return 1;
-        };
+          enVoices.forEach(v => {
+            const isSelected = (v.voiceURI === selectedEnVoiceUri || v.name === selectedEnVoiceUri) ? 'selected' : '';
+            const l = v.lang.toLowerCase();
+            let accentLabel = '米語';
+            if (l.includes('gb') || l.includes('uk')) accentLabel = 'イギリス英語';
+            else if (l.includes('au')) accentLabel = '豪州英語';
 
-        enVoices.sort((a, b) => getVoiceScore(b) - getVoiceScore(a));
-
-        enVoices.forEach(v => {
-          const isSelected = (v.voiceURI === selectedEnVoiceUri || v.name === selectedEnVoiceUri) ? 'selected' : '';
-          const l = v.lang.toLowerCase();
-          let accentLabel = '米語';
-          if (l.includes('gb') || l.includes('uk')) accentLabel = 'イギリス英語';
-          else if (l.includes('au')) accentLabel = '豪州英語';
-
-          const n = v.name.toLowerCase();
-          let tag = '';
-          if (n.includes('ava')) tag = ' ★Ava優先';
-          else if (n.includes('enhanced') || n.includes('premium') || n.includes('alex')) tag = ' ★高音質';
-
-          const label = `${v.name} [${accentLabel}]${tag}`;
-          html += `<option value="${v.voiceURI || v.name}" ${isSelected}>${label}</option>`;
-        });
+            const label = `${v.name} [${accentLabel}]（端末内）`;
+            html += `<option value="${v.voiceURI || v.name}" ${isSelected}>${label}</option>`;
+          });
+        }
       }
 
       select.innerHTML = html;
-      select.value = selectedEnVoiceUri || 'ava_preferred';
+      select.value = selectedEnVoiceUri || 'google_tts';
     }
 
     // --- 5. Training Deck & Filter Logic ---
