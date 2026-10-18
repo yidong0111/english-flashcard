@@ -350,12 +350,12 @@
               </button>
             </div>
             <select id="select-en-voice" class="w-full text-xs px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
-              <option value="google_tts">Google音声（Web高音質・明瞭）★おすすめ</option>
-              <option value="device_default">端末の標準音声（Samantha等・オフライン可）</option>
+              <option value="device_default">端末の最適音声（Ava・Samantha等）★推奨</option>
+              <option value="google_tts">Google音声（Web高音質）</option>
             </select>
             <p class="text-2xs text-indigo-600 font-medium mt-1 flex items-center">
               <svg class="w-3.5 h-3.5 mr-1 shrink-0 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              明瞭で自然なGoogle音声を標準使用。オフライン時は端末音声へ自動フォールバックします
+              ダウンロード済みのAva（拡張/プレミアム）など、端末内の最高品質音声を自動優先します
             </p>
           </div>
 
@@ -557,7 +557,7 @@
     let autoPlayEn = true;
     let speechRateEn = 1.0;
     let speechRateJa = 1.0;
-    let selectedEnVoiceUri = 'google_tts';
+    let selectedEnVoiceUri = 'device_default';
     let spreadsheetUrl = '';
     let activeTab = 'train';
 
@@ -630,10 +630,10 @@
           autoPlayEn = s.autoPlayEn !== undefined ? !!s.autoPlayEn : true;
           speechRateEn = s.speechRateEn !== undefined ? s.speechRateEn : 1.0;
           speechRateJa = s.speechRateJa || 1.0;
-          selectedEnVoiceUri = s.selectedEnVoiceUri || 'google_tts';
+          selectedEnVoiceUri = s.selectedEnVoiceUri || 'device_default';
           spreadsheetUrl = s.spreadsheetUrl || '';
         } else {
-          selectedEnVoiceUri = 'google_tts';
+          selectedEnVoiceUri = 'device_default';
         }
       } catch (e) {
         console.warn('LocalStorage error:', e);
@@ -669,65 +669,73 @@
     let currentAudioObj = null;
     let currentSpeechToken = 0; // 音声再生リクエストの追跡トークン（多重・重複再生防止）
 
-    // Novelty / joke voices in WebKit to strictly filter out
+    // Novelty / joke voices & Eloquence in WebKit to strictly filter out
     const JOKE_VOICE_NAMES = [
       'albert', 'bad news', 'bahh', 'bells', 'boing', 'bubbles', 'cellos', 
       'deranged', 'fred', 'good news', 'hysterical', 'junior', 'kathy', 
       'pipe organ', 'organ', 'princess', 'ralph', 'trinoids', 'whisper', 
-      'zarvox', 'jester', 'superstar', 'wobble', 'grandpa', 'grandma'
+      'zarvox', 'jester', 'superstar', 'wobble', 'grandpa', 'grandma',
+      // iOS 17+ Eloquence（機械的な声）
+      'eddy', 'flo', 'reed', 'rocko', 'sandy', 'shelley'
     ];
 
-    function isCleanVoice(name) {
-      if (!name) return false;
-      const lower = name.toLowerCase();
-      return !JOKE_VOICE_NAMES.some(j => lower.includes(j));
+    function isCleanVoice(v) {
+      if (!v) return false;
+      const name = (v.name || '').toLowerCase();
+      const uri = (v.voiceURI || '').toLowerCase();
+      if (uri.includes('eloquence') || uri.includes('speech.synthesis.voice')) return false;
+      return !JOKE_VOICE_NAMES.some(j => name.includes(j));
     }
+
+    // 品質スコア: premium 3 > enhanced 2 > その他 1
+    function voiceQuality(v) {
+      const s = ((v.voiceURI || '') + ' ' + (v.name || '')).toLowerCase();
+      if (s.includes('premium') || s.includes('プレミアム')) return 3;
+      if (s.includes('enhanced') || s.includes('拡張')) return 2;
+      return 1;
+    }
+
+    const PREFERRED_NAMES = {
+      ja: ['kyoko', 'otoya'],
+      en: ['ava', 'zoe', 'samantha', 'allison', 'evan', 'nathan', 'tom', 'daniel', 'karen']
+    };
 
     function getBestVoice(lang, preferredVoiceUri = '') {
       if (!('speechSynthesis' in window)) return null;
       const voices = window.speechSynthesis.getVoices();
       if (!voices || voices.length === 0) return null;
 
-      const langPrefix = lang.split('-')[0].toLowerCase();
+      const prefix = lang.split('-')[0].toLowerCase();
+      const candidates = voices.filter(v =>
+        (v.lang || '').toLowerCase().replace('_', '-').startsWith(prefix) && isCleanVoice(v)
+      );
+      if (candidates.length === 0) return null;
 
-      // 日本語音声の確実な検索（Kyoko, Otoya, または ja）
-      if (langPrefix === 'ja') {
-        const jaVoice = voices.find(v => {
-          const l = (v.lang || '').toLowerCase().replace('_', '-');
-          const n = (v.name || '').toLowerCase();
-          return l.startsWith('ja') || n.includes('kyoko') || n.includes('otoya') || n.includes('japanese');
-        });
-        if (jaVoice) return jaVoice;
+      // ユーザーが設定で個別に選んだ音声
+      if (preferredVoiceUri && !['system_default', 'device_default', 'google_tts'].includes(preferredVoiceUri)) {
+        const m = candidates.find(v => v.voiceURI === preferredVoiceUri || v.name === preferredVoiceUri);
+        if (m) return m;
       }
 
-      // 英語音声の検索（おふざけ音声を完全除外）
-      const matchingVoices = voices.filter(v => {
-        const l = (v.lang || '').toLowerCase().replace('_', '-');
-        return l.startsWith('en') && isCleanVoice(v.name);
-      });
-      if (matchingVoices.length === 0) {
-        const rawVoices = voices.filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('en'));
-        return rawVoices[0] || null;
-      }
+      const names = PREFERRED_NAMES[prefix] || [];
+      const nameRank = v => {
+        const i = names.findIndex(n => (v.name || '').toLowerCase().includes(n));
+        return i === -1 ? 99 : i;
+      };
+      const regionBonus = v => (prefix === 'en' && /en[-_]us/i.test(v.lang)) ? 0 : 1;
 
-      if (preferredVoiceUri && !['system_default', 'device_default', 'google_tts', ''].includes(preferredVoiceUri)) {
-        const customMatch = matchingVoices.find(v => (v.voiceURI === preferredVoiceUri || v.name === preferredVoiceUri));
-        if (customMatch) return customMatch;
-      }
-
-      // Samantha, Daniel, Karen などの標準的な自然な音声を優先
-      const standardVoice = matchingVoices.find(v => {
-        const n = v.name.toLowerCase();
-        return n.includes('samantha') || n.includes('daniel') || n.includes('karen') || n.includes('allison');
-      });
-      return standardVoice || matchingVoices[0];
+      candidates.sort((a, b) =>
+        voiceQuality(b) - voiceQuality(a) ||  // 高品質優先 (premium > enhanced > compact)
+        nameRank(a) - nameRank(b) ||          // 自然な声の名前優先 (ava > zoe > samantha...)
+        regionBonus(a) - regionBonus(b)       // 英語は米語優先
+      );
+      return candidates[0];
     }
 
     function stopAllAudio() {
       currentSpeechToken++;
       if (currentAudioObj) {
         try {
-          // 重要: イベントリスナーを解除してから停止・消去（Safariでのonerror/AbortError発火による誤爆発話を防止）
           currentAudioObj.onended = null;
           currentAudioObj.onerror = null;
           currentAudioObj.pause();
@@ -744,7 +752,7 @@
     }
 
     function speakWithWebSpeech(text, lang, rate = 1.0, token = currentSpeechToken) {
-      if (token !== currentSpeechToken) return; // 既に別の文へ移行している場合は発話しない
+      if (token !== currentSpeechToken) return;
       if (!('speechSynthesis' in window)) return;
       try {
         window.speechSynthesis.cancel();
@@ -762,7 +770,7 @@
             if (bestVoice) utterance.voice = bestVoice;
           }
         } else {
-          // 日本語音声
+          // 日本語音声（Kyoko 拡張など最高品質を自動選択）
           const bestJaVoice = getBestVoice('ja-JP', '');
           if (bestJaVoice) utterance.voice = bestJaVoice;
         }
@@ -783,10 +791,10 @@
       const isJa = lang.startsWith('ja');
       const isEn = lang.startsWith('en');
 
-      // Googleオンライン音声（日本語、または英語でgoogle_tts選択時）
-      if (isJa || (isEn && (selectedEnVoiceUri === 'google_tts' || !selectedEnVoiceUri))) {
+      // Googleオンライン音声（英語でgoogle_ttsを選択した場合のみ）
+      if (selectedEnVoiceUri === 'google_tts' && isEn) {
         try {
-          const targetLang = isJa ? 'ja' : 'en';
+          const targetLang = 'en';
           const cleanText = encodeURIComponent(text.trim());
           const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${cleanText}`;
           const audio = new Audio(url);
@@ -800,7 +808,6 @@
           };
 
           audio.onerror = () => {
-            // トークンが変わっていれば中断されたとみなしフォールバックしない
             if (currentSpeechToken !== thisToken) return;
             currentAudioObj = null;
             speakWithWebSpeech(text, lang, rate, thisToken);
@@ -809,7 +816,6 @@
           const playPromise = audio.play();
           if (playPromise !== undefined) {
             playPromise.catch((err) => {
-              // 画面遷移による意図的なAbortErrorは無視
               if (err && err.name === 'AbortError') return;
               if (currentSpeechToken !== thisToken) return;
               currentAudioObj = null;
@@ -825,7 +831,7 @@
         }
       }
 
-      // それ以外（ユーザーが端末内音声を明示選択した場合）
+      // 日本語および端末内英語音声は高音質WebSpeechで再生（遅延ゼロ・自然な肉声）
       speakWithWebSpeech(text, lang, rate, thisToken);
     }
 
@@ -839,41 +845,52 @@
       if (card) speakText(card.en, 'en-US', speechRateEn);
     }
 
-    // プルダウンのクリーニング（重複・難解な内部IDを除外して主要音声のみ整理）
+    // プルダウンの更新（品質スコア表示＆おふざけ・機械音声除外）
     function populateVoiceSelect() {
       const select = document.getElementById('select-en-voice');
       if (!select) return;
 
-      let html = '<option value="google_tts">Google音声（Web高音質・明瞭）★おすすめ</option>';
-      html += '<option value="device_default">端末の標準音声（Samantha等・オフライン可）</option>';
+      let html = '<option value="device_default">端末の最適音声（Ava・Samantha等）★推奨</option>';
+      html += '<option value="google_tts">Google音声（Web高音質）</option>';
 
       if ('speechSynthesis' in window) {
         const voices = window.speechSynthesis.getVoices();
         if (voices && voices.length > 0) {
           // 主要英語音声（米語・英語・豪語）に絞り込み、おふざけ・変な音声を完全排除
           const enVoices = voices.filter(v => {
-            const l = v.lang.toLowerCase().replace('_', '-');
+            const l = (v.lang || '').toLowerCase().replace('_', '-');
             if (!l.startsWith('en')) return false;
-            if (v.name.startsWith('com.apple') || v.name.includes('#')) return false;
-            if (!isCleanVoice(v.name)) return false; // おふざけ音声を除外
+            if (!isCleanVoice(v)) return false;
             return l.includes('us') || l.includes('gb') || l.includes('uk') || l.includes('au') || l === 'en';
           });
 
+          // 品質スコア（★プレミアム > 拡張 > 標準）および優先名（Ava等）でソート
+          const names = PREFERRED_NAMES['en'] || [];
+          const nameRank = v => {
+            const i = names.findIndex(n => (v.name || '').toLowerCase().includes(n));
+            return i === -1 ? 99 : i;
+          };
+          enVoices.sort((a, b) =>
+            voiceQuality(b) - voiceQuality(a) ||
+            nameRank(a) - nameRank(b)
+          );
+
           enVoices.forEach(v => {
             const isSelected = (v.voiceURI === selectedEnVoiceUri || v.name === selectedEnVoiceUri) ? 'selected' : '';
-            const l = v.lang.toLowerCase();
+            const l = (v.lang || '').toLowerCase();
             let accentLabel = '米語';
             if (l.includes('gb') || l.includes('uk')) accentLabel = 'イギリス英語';
             else if (l.includes('au')) accentLabel = '豪州英語';
 
-            const label = `${v.name} [${accentLabel}]（端末内）`;
+            const q = voiceQuality(v) === 3 ? '★プレミアム' : voiceQuality(v) === 2 ? '拡張' : '標準';
+            const label = `${v.name} [${accentLabel}・${q}]`;
             html += `<option value="${v.voiceURI || v.name}" ${isSelected}>${label}</option>`;
           });
         }
       }
 
       select.innerHTML = html;
-      select.value = selectedEnVoiceUri || 'google_tts';
+      select.value = selectedEnVoiceUri || 'device_default';
     }
 
     // --- 5. Training Deck & Filter Logic ---
