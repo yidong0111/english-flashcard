@@ -667,6 +667,7 @@
 
     // --- 4. Web Speech API (音声モデルのスマート選択) ---
     let currentAudioObj = null;
+    let currentSpeechToken = 0; // 音声再生リクエストの追跡トークン（多重・重複再生防止）
 
     // Novelty / joke voices in WebKit to strictly filter out
     const JOKE_VOICE_NAMES = [
@@ -688,11 +689,24 @@
       if (!voices || voices.length === 0) return null;
 
       const langPrefix = lang.split('-')[0].toLowerCase();
-      // おふざけ音声を除外したクリーンな音声一覧
-      const matchingVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix) && isCleanVoice(v.name));
+
+      // 日本語音声の確実な検索（Kyoko, Otoya, または ja）
+      if (langPrefix === 'ja') {
+        const jaVoice = voices.find(v => {
+          const l = (v.lang || '').toLowerCase().replace('_', '-');
+          const n = (v.name || '').toLowerCase();
+          return l.startsWith('ja') || n.includes('kyoko') || n.includes('otoya') || n.includes('japanese');
+        });
+        if (jaVoice) return jaVoice;
+      }
+
+      // 英語音声の検索（おふざけ音声を完全除外）
+      const matchingVoices = voices.filter(v => {
+        const l = (v.lang || '').toLowerCase().replace('_', '-');
+        return l.startsWith('en') && isCleanVoice(v.name);
+      });
       if (matchingVoices.length === 0) {
-        // 万が一クリーンな音声が見当たらない場合は全体から検索
-        const rawVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
+        const rawVoices = voices.filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('en'));
         return rawVoices[0] || null;
       }
 
@@ -706,12 +720,31 @@
         const n = v.name.toLowerCase();
         return n.includes('samantha') || n.includes('daniel') || n.includes('karen') || n.includes('allison');
       });
-      if (standardVoice) return standardVoice;
-
-      return matchingVoices[0];
+      return standardVoice || matchingVoices[0];
     }
 
-    function speakWithWebSpeech(text, lang, rate = 1.0) {
+    function stopAllAudio() {
+      currentSpeechToken++;
+      if (currentAudioObj) {
+        try {
+          // 重要: イベントリスナーを解除してから停止・消去（Safariでのonerror/AbortError発火による誤爆発話を防止）
+          currentAudioObj.onended = null;
+          currentAudioObj.onerror = null;
+          currentAudioObj.pause();
+          currentAudioObj.removeAttribute('src');
+          currentAudioObj.load();
+        } catch(e) {}
+        currentAudioObj = null;
+      }
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch(e) {}
+      }
+    }
+
+    function speakWithWebSpeech(text, lang, rate = 1.0, token = currentSpeechToken) {
+      if (token !== currentSpeechToken) return; // 既に別の文へ移行している場合は発話しない
       if (!('speechSynthesis' in window)) return;
       try {
         window.speechSynthesis.cancel();
@@ -721,16 +754,17 @@
 
         if (lang.startsWith('en')) {
           if (selectedEnVoiceUri === 'device_default' || selectedEnVoiceUri === 'google_tts') {
-            const bestVoice = getBestVoice(lang, '');
+            const bestVoice = getBestVoice('en-US', '');
             if (bestVoice) utterance.voice = bestVoice;
             else utterance.voice = null;
           } else {
-            const bestVoice = getBestVoice(lang, selectedEnVoiceUri);
+            const bestVoice = getBestVoice('en-US', selectedEnVoiceUri);
             if (bestVoice) utterance.voice = bestVoice;
           }
         } else {
-          const bestVoice = getBestVoice(lang, '');
-          if (bestVoice) utterance.voice = bestVoice;
+          // 日本語音声
+          const bestJaVoice = getBestVoice('ja-JP', '');
+          if (bestJaVoice) utterance.voice = bestJaVoice;
         }
 
         window.speechSynthesis.speak(utterance);
@@ -740,45 +774,59 @@
     }
 
     function speakText(text, lang, rate = 1.0) {
-      // 停止処理
-      if (currentAudioObj) {
-        try { currentAudioObj.pause(); currentAudioObj.src = ''; } catch(e){}
-        currentAudioObj = null;
-      }
-      if ('speechSynthesis' in window) {
-        try { window.speechSynthesis.cancel(); } catch(e){}
-      }
+      if (!text) return;
 
-      // 英語かつGoogleオンライン音声が選ばれている場合
-      if (lang.startsWith('en') && (selectedEnVoiceUri === 'google_tts' || !selectedEnVoiceUri)) {
+      // 直前に流れていた音声を完全停止
+      stopAllAudio();
+
+      const thisToken = currentSpeechToken;
+      const isJa = lang.startsWith('ja');
+      const isEn = lang.startsWith('en');
+
+      // Googleオンライン音声（日本語、または英語でgoogle_tts選択時）
+      if (isJa || (isEn && (selectedEnVoiceUri === 'google_tts' || !selectedEnVoiceUri))) {
         try {
+          const targetLang = isJa ? 'ja' : 'en';
           const cleanText = encodeURIComponent(text.trim());
-          const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${cleanText}`;
+          const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${targetLang}&q=${cleanText}`;
           const audio = new Audio(url);
           audio.playbackRate = rate;
           currentAudioObj = audio;
 
-          // エラーまたはオフライン時は即座に端末内WebSpeechへフォールバック
+          audio.onended = () => {
+            if (currentSpeechToken === thisToken) {
+              currentAudioObj = null;
+            }
+          };
+
           audio.onerror = () => {
-            speakWithWebSpeech(text, lang, rate);
+            // トークンが変わっていれば中断されたとみなしフォールバックしない
+            if (currentSpeechToken !== thisToken) return;
+            currentAudioObj = null;
+            speakWithWebSpeech(text, lang, rate, thisToken);
           };
 
           const playPromise = audio.play();
           if (playPromise !== undefined) {
-            playPromise.catch(() => {
-              speakWithWebSpeech(text, lang, rate);
+            playPromise.catch((err) => {
+              // 画面遷移による意図的なAbortErrorは無視
+              if (err && err.name === 'AbortError') return;
+              if (currentSpeechToken !== thisToken) return;
+              currentAudioObj = null;
+              speakWithWebSpeech(text, lang, rate, thisToken);
             });
           }
           return;
         } catch (err) {
+          if (currentSpeechToken !== thisToken) return;
           console.warn('Google TTS play failed, fallback to local:', err);
-          speakWithWebSpeech(text, lang, rate);
+          speakWithWebSpeech(text, lang, rate, thisToken);
           return;
         }
       }
 
-      // それ以外（日本語またはユーザーが端末内音声を明示選択した場合）
-      speakWithWebSpeech(text, lang, rate);
+      // それ以外（ユーザーが端末内音声を明示選択した場合）
+      speakWithWebSpeech(text, lang, rate, thisToken);
     }
 
     function playCurrentJa() {
