@@ -57,7 +57,13 @@
     }
     .card-notes-text {
       font-size: 11px !important;
-      line-height: 15px !important;
+      line-height: 16px !important;
+      white-space: pre-line !important;
+      max-height: 4.5rem; /* 約4.5行分（超えると解説欄内のみ指で縦スクロール） */
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
   </style>
 </head>
@@ -204,7 +210,7 @@
           <p id="card-en" class="card-answer-en font-bold text-indigo-950 py-0.5">
             English sentence
           </p>
-          <p id="card-notes" class="card-notes-text text-slate-500 italic mt-0.5">
+          <p id="card-notes" class="card-notes-text text-slate-500 italic mt-1 pr-1">
             解説
           </p>
         </div>
@@ -448,15 +454,14 @@
           <textarea id="form-en" required rows="2" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50" placeholder="例: What time did he get home yesterday?"></textarea>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">カテゴリ</label>
-            <input type="text" id="form-category" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50" placeholder="例: 疑問詞">
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">解説・別解</label>
-            <input type="text" id="form-notes" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50" placeholder="例: return home でも可">
-          </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">カテゴリ</label>
+          <input type="text" id="form-category" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50" placeholder="例: 疑問詞">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">解説・別解 <span class="text-2xs font-normal text-slate-400">（&lt;br&gt; または改行で複数行表示）</span></label>
+          <textarea id="form-notes" rows="2" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-slate-50" placeholder="例: return home でも可<br>getは到達のニュアンス"></textarea>
         </div>
 
         <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
@@ -494,7 +499,7 @@
             <div><span class="font-bold text-indigo-600">A列:</span> 日本語文 (必須)</div>
             <div><span class="font-bold text-indigo-600">B列:</span> 模範英文 (必須)</div>
             <div><span class="font-bold text-indigo-600">C列:</span> カテゴリ (例: 関係代名詞)</div>
-            <div><span class="font-bold text-indigo-600">D列:</span> 解説・別解</div>
+            <div><span class="font-bold text-indigo-600">D列:</span> 解説・別解（&lt;br&gt;で改行可）</div>
           </div>
         </div>
 
@@ -894,6 +899,21 @@
     }
 
     // --- 5. Training Deck & Filter Logic ---
+    function formatNotesMultiline(notes) {
+      if (!notes) return '';
+      return String(notes)
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/\r\n/g, '\n')
+        .trim();
+    }
+
+    function formatNotesSingleLine(notes) {
+      if (!notes) return '';
+      return String(notes)
+        .replace(/<br\s*\/?>/gi, ' / ')
+        .replace(/\r?\n/g, ' / ')
+        .trim();
+    }
     function getFilteredCards() {
       return cards.filter(c => {
         const matchesBookmark = (activeFilter === 'bookmarked') ? c.bookmarked : true;
@@ -946,7 +966,15 @@
 
       cardJaEl.textContent = card.ja;
       cardEnEl.textContent = card.en;
-      cardNotesEl.textContent = card.notes ? `※ ${card.notes}` : '';
+      const formattedNotes = formatNotesMultiline(card.notes);
+      if (formattedNotes) {
+        cardNotesEl.textContent = formattedNotes.startsWith('※') ? formattedNotes : `※ ${formattedNotes}`;
+        cardNotesEl.classList.remove('hidden');
+        cardNotesEl.scrollTop = 0;
+      } else {
+        cardNotesEl.textContent = '';
+        cardNotesEl.classList.add('hidden');
+      }
       categoryBadge.textContent = card.category || '一般';
 
       // Bookmark state (大きく押しやすいボタンの見た目切替)
@@ -1260,7 +1288,7 @@
             </div>
             <p class="font-bold text-slate-900 text-xs mb-0.5 leading-snug">${c.ja}</p>
             <p class="text-indigo-700 font-semibold text-xs mb-0.5 leading-snug">${c.en}</p>
-            ${c.notes ? `<p class="text-slate-400 text-2xs italic truncate">※ ${c.notes}</p>` : ''}
+            ${c.notes ? `<p class="text-slate-400 text-2xs italic truncate">※ ${formatNotesSingleLine(c.notes)}</p>` : ''}
           </div>
 
           <div class="flex items-center space-x-1 shrink-0">
@@ -1469,9 +1497,14 @@
       document.getElementById('tab-settings').addEventListener('click', () => switchTab('settings'));
 
       // Card touch tap (Tap card body to reveal / advance)
+      let touchMovedOnCard = false;
       const cardTouchTarget = document.getElementById('card-touch-target');
       cardTouchTarget.addEventListener('click', (e) => {
         if (e.target.closest('button')) return;
+        if (touchMovedOnCard) {
+          touchMovedOnCard = false;
+          return;
+        }
         toggleAnswerOrNext();
       });
 
@@ -1479,6 +1512,15 @@
       cardTouchTarget.addEventListener('touchstart', (e) => {
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
+        touchMovedOnCard = false;
+      }, { passive: true });
+
+      cardTouchTarget.addEventListener('touchmove', (e) => {
+        const dx = Math.abs(e.changedTouches[0].screenX - touchStartX);
+        const dy = Math.abs(e.changedTouches[0].screenY - touchStartY);
+        if (dx > 8 || dy > 8) {
+          touchMovedOnCard = true;
+        }
       }, { passive: true });
 
       cardTouchTarget.addEventListener('touchend', (e) => {
